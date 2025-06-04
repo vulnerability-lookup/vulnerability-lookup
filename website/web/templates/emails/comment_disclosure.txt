@@ -1,0 +1,7 @@
+Dear {{ recipient_name }},
+
+A new comment related to your disclosure, {{ disclosure.title }}, has been published.
+
+{{ platform_url }}/disclosure/{{ disclosure.id }}/comments
+
+{{ signoff }}
