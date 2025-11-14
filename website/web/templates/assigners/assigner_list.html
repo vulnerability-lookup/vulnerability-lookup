@@ -1,0 +1,105 @@
+{% extends "main.html" %}
+
+{% block title %}Vulnerability Assigners{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+  <h1 class="mb-0">Vulnerability Assigners</h1>
+
+  <!-- Controls: year, month, sort -->
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <select id="yearPicker" class="form-select form-select-sm" style="width: auto;">
+      <option value="">Year</option>
+    </select>
+
+    <select id="monthPicker" class="form-select form-select-sm" style="width: auto;">
+      <option value="">Month</option>
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+
+    <!-- Sort button -->
+    <input type="hidden" name="sort" id="sortInput" value="{{ sort|default('desc') }}">
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="sortToggleBtn">
+      {% if sort == 'asc' %}Sort ↑{% else %}Sort ↓{% endif %}
+    </button>
+  </div>
+</div>
+
+
+<!-- CWE Table -->
+<div class="table-responsive">
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Occurrences</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assigner in assigners %}
+        <tr>
+          <td><a href="{{ url_for('home_bp.search', assigner=assigner[0]) }}">{{ assigner[0] }}</a></td>
+          <td>{{ assigner[1] | int }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+  const yearPicker = document.getElementById("yearPicker");
+  const monthPicker = document.getElementById("monthPicker");
+  const sortToggleBtn = document.getElementById("sortToggleBtn");
+  const currentYear = new Date().getFullYear();
+  const selectedYear = new URLSearchParams(window.location.search).get("year");
+
+  for (let y = currentYear; y >= 2016; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    if (selectedYear == y) opt.selected = true;
+    yearPicker.appendChild(opt);
+  }
+
+  const selectedMonth = new URLSearchParams(window.location.search).get("month");
+  if (selectedMonth) {
+    monthPicker.value = selectedMonth;
+  }
+
+  function getPeriod() {
+    const y = yearPicker.value;
+    const m = monthPicker.value;
+    if (y && m) return `year=${y}&month=${m}`;
+    if (y) return `year=${y}`;
+    const d = new Date();
+    return d.toISOString().slice(0, 7);
+  }
+
+  // Sort toggle
+  const sortInput = document.getElementById("sortInput");
+  sortToggleBtn.addEventListener("click", () => {
+    const period = getPeriod();
+    sortInput.value = sortInput.value === "asc" ? "desc" : "asc";
+    window.location = "/assigners/?"+period+"&sort="+sortInput.value;
+  });
+
+  yearPicker.addEventListener("change", ()=>{
+    const period = getPeriod();
+    window.location = "/assigners/?"+period;
+  });
+  monthPicker.addEventListener("change", ()=>{
+    const period = getPeriod();
+    window.location = "/assigners/?"+period;
+  });
+</script>
+{% endblock %}
