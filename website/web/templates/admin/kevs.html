@@ -1,0 +1,155 @@
+{% extends "main.html" %}
+{% block title %}KEV Catalog Management{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-7">
+    <h1>Local KEV Catalog</h1>
+    <p class="text-muted">Manage Known Exploited Vulnerabilities (BCP-07 compliant)</p>
+  </div>
+  <div class="col-md-2">
+    <a href="{{ url_for('admin_kev_bp.form_kev') }}" class="btn btn-success">
+      {{ render_icon('plus') }} Add KEV Entry
+    </a>
+  </div>
+  <div class="col-md-3">
+    <form class="align-items-center" method="GET">
+        <label class="visually-hidden" for="kevInput">Search term</label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="kevInput" name="query" placeholder="Search term" />
+          <button type="submit" class="btn btn-primary input-group-text">Submit</button>
+        </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-responsive-md">
+  <table id="table-kevs" class="table table-hover">
+  <thead>
+    <tr>
+      <th>Vulnerability ID</th>
+      <th>Status</th>
+      <th>Exploited</th>
+      <th>Status Updated</th>
+      <th>Evidence Count</th>
+      <th>Created</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for kev in kevs %}
+    <tr>
+      <td>
+        <a href="{{ url_for('home_bp.vulnerability_view', vulnerability_id=kev.vuln_id) }}">
+          {{ kev.vuln_id.upper() }}
+        </a>
+        {% if kev.alt_id and kev.alt_id|length > 0 %}
+          <br><small class="text-muted">+{{ kev.alt_id|length }} alt ID(s)</small>
+        {% endif %}
+      </td>
+      <td>
+        {% if kev.status_reason.value == 'confirmed' %}
+          <span class="badge bg-success">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'suspected' %}
+          <span class="badge bg-warning">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'disputed' %}
+          <span class="badge bg-danger">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'historical' %}
+          <span class="badge bg-secondary">{{ kev.status_reason.value.title() }}</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ kev.status_reason.value.title() }}</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if kev.exploited %}
+          <span class="badge bg-danger">Yes</span>
+        {% else %}
+          <span class="badge bg-success">No</span>
+        {% endif %}
+      </td>
+      <td>{{ kev.status_updated_at | datetimeformat('%Y-%m-%d %H:%M %z') }}</td>
+      <td>
+        <span class="badge bg-info">{{ kev.evidence.count() }}</span>
+      </td>
+      <td>{{ kev.creation_timestamp | datetimeformat('%Y-%m-%d %H:%M %z') }}</td>
+      <td>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('admin_kev_bp.form_kev', kev_uuid=kev.uuid) }}">
+          {{ render_icon('pen', title='Edit KEV entry') }}
+        </a>
+        <a href="#"
+          class="btn btn-danger btn-sm delete-kev-btn"
+          data-kev-uuid="{{ kev.uuid }}"
+          data-kev-name="{{ kev.vuln_id.upper() }}"
+        >
+          {{ render_icon('trash') }}
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+</div>
+
+<div class="row">
+    <div class="col">
+        {{ pagination.links }}
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        {{ pagination.info }}
+    </div>
+</div>
+
+<!-- Delete KEV Modal -->
+<div class="modal fade" id="deleteKEVModal" tabindex="-1" aria-labelledby="deleteKEVLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteKEVLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        Are you sure you want to delete KEV entry:
+        <strong id="deleteKEVName"></strong>?
+        <br><br>
+        <strong>Warning:</strong> This will also delete all associated evidence.
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
+        <form id="deleteKEVForm" method="POST" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const deleteButtons = document.querySelectorAll(".delete-kev-btn");
+  const modalEl = document.getElementById("deleteKEVModal");
+  const modal = new bootstrap.Modal(modalEl);
+  const form = document.getElementById("deleteKEVForm");
+  const nameEl = document.getElementById("deleteKEVName");
+
+  deleteButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const uuid = btn.dataset.kevUuid;
+      const name = btn.dataset.kevName;
+
+      // Set modal text
+      nameEl.textContent = name;
+
+      // Set form action to POST endpoint
+      form.action = `/admin/kev/${uuid}/delete`;
+
+      modal.show();
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "main.html" %}
+{% from 'bootstrap5/form.html' import render_form, render_field %}
+
+{% block title %}{{ action }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+  <div class="col">
+    <h1>{{ action }}</h1>
+    {% if kev_entry %}
+      <p class="text-muted">Managing: <strong>{{ kev_entry.vuln_id.upper() }}</strong></p>
+    {% endif %}
+  </div>
+  <div class="col-auto">
+    <a href="{{ url_for('admin_kevs_bp.list_kevs') }}" class="btn btn-secondary">
+      {{ render_icon('arrow-left') }} Back to List
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">KEV Entry Details</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" class="form">
+      {{ form.csrf_token }}
+
+      <div class="row">
+        <div class="col-md-6">
+          {{ render_field(form.vuln_id) }}
+        </div>
+        <div class="col-md-6">
+          {{ render_field(form.status_reason) }}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          {{ render_field(form.alt_id) }}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          {{ render_field(form.exploited) }}
+        </div>
+        <div class="col-md-6">
+          {{ render_field(form.status_updated_at) }}
+        </div>
+      </div>
+
+      <hr>
+      <h6>Characteristics</h6>
+      <div class="row">
+        <div class="col-md-3">
+          {{ render_field(form.remote_code_execution) }}
+        </div>
+        <div class="col-md-3">
+          {{ render_field(form.authentication_required) }}
+        </div>
+        <div class="col-md-3">
+          {{ render_field(form.local_access_required) }}
+        </div>
+        <div class="col-md-3">
+          {{ render_field(form.severity) }}
+        </div>
+      </div>
+
+      <hr>
+      <h6>Timestamps</h6>
+      <div class="row">
+        <div class="col-md-4">
+          {{ render_field(form.first_seen_at) }}
+        </div>
+        <div class="col-md-4">
+          {{ render_field(form.asserted_at) }}
+        </div>
+        <div class="col-md-4">
+          {{ render_field(form.last_seen_at) }}
+        </div>
+      </div>
+
+      <hr>
+      <h6>Scope</h6>
+      <div class="row">
+        <div class="col-md-12">
+          {{ render_field(form.scope_notes) }}
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col">
+          {{ render_field(form.submit) }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if kev_entry %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Evidence ({{ evidence_list|length }})</h5>
+  </div>
+  <div class="card-body">
+    {% if evidence_list %}
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Signal</th>
+            <th>Confidence</th>
+            <th>Details</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for evidence in evidence_list %}
+          <tr>
+            <td>
+              {% if evidence.evidence_type %}
+                <span class="badge bg-secondary">{{ evidence.evidence_type.value }}</span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>{{ evidence.source }}</td>
+            <td>
+              {% if evidence.signal %}
+                {% if evidence.signal is string %}
+                  <small>{{ evidence.signal }}</small>
+                {% else %}
+                  <small>{{ evidence.signal|tojson }}</small>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if evidence.confidence is not none %}
+                {% if evidence.confidence is number %}
+                  {{ "%.2f"|format(evidence.confidence) }}
+                {% else %}
+                  {{ evidence.confidence }}
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if evidence.details %}
+                <small class="text-muted">{{ evidence.details|length }} field(s)</small>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="#"
+                class="btn btn-danger btn-sm delete-evidence-btn"
+                data-evidence-id="{{ evidence.id }}"
+                data-evidence-source="{{ evidence.source }}"
+              >
+                {{ render_icon('trash') }}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No evidence added yet.</p>
+    {% endif %}
+
+    <hr>
+    <h6>Add Evidence</h6>
+    <form method="POST" action="{{ url_for('admin_kev_bp.add_evidence', kev_uuid=kev_entry.uuid) }}">
+      {{ evidence_form.csrf_token }}
+
+      <div class="row">
+        <div class="col-md-4">
+          {{ render_field(evidence_form.evidence_type) }}
+        </div>
+        <div class="col-md-4">
+          {{ render_field(evidence_form.source) }}
+        </div>
+        <div class="col-md-4">
+          {{ render_field(evidence_form.signal) }}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          {{ render_field(evidence_form.confidence) }}
+        </div>
+        <div class="col-md-6">
+          {{ render_field(evidence_form.details) }}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          {{ render_field(evidence_form.submit) }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Evidence Modal -->
+<div class="modal fade" id="deleteEvidenceModal" tabindex="-1" aria-labelledby="deleteEvidenceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteEvidenceLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        Are you sure you want to delete evidence from source:
+        <strong id="deleteEvidenceSource"></strong>?
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
+        <form id="deleteEvidenceForm" method="POST" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const deleteButtons = document.querySelectorAll(".delete-evidence-btn");
+  const modalEl = document.getElementById("deleteEvidenceModal");
+  const modal = new bootstrap.Modal(modalEl);
+  const form = document.getElementById("deleteEvidenceForm");
+  const sourceEl = document.getElementById("deleteEvidenceSource");
+
+  deleteButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const evidenceId = btn.dataset.evidenceId;
+      const source = btn.dataset.evidenceSource;
+
+      // Set modal text
+      sourceEl.textContent = source;
+
+      // Set form action to POST endpoint
+      form.action = `/admin/kev/{{ kev_entry.uuid }}/evidence/${evidenceId}/delete`;
+
+      modal.show();
+    });
+  });
+});
+</script>
+{% endif %}
+
+{% endblock %}
