@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+
+import uuid
+from datetime import timezone
+
+from feedgen.feed import FeedGenerator  # type: ignore[import-untyped]
+from flask import Blueprint, Response, abort, render_template, request, url_for
+from flask_paginate import (  # type: ignore[import-untyped]
+    Pagination,
+    get_page_args,
+    get_parameter,
+)
+from sqlalchemy import or_
+
+from vulnerabilitylookup.default import get_config
+from website.lib.utils import escape_ilike, inject_xslt
+from website.models import KEVEntry, KEVEvidence
+from website.models.kev_entry import KEVExploitationStatus
+from website.web.bootstrap import application
+
+kev_catalog_bp = Blueprint(
+    "kev_catalog_bp",
+    __name__,
+    url_prefix="/known-exploited-vulnerabilities-catalog",
+)
+
+local_instance_uuid = uuid.UUID(get_config("generic", "local_instance_uuid").lower())
+
+
+def get_kev_catalog_mapping() -> dict[str, tuple[str, str]]:
+    """Build a mapping of catalog UUIDs to (short_name, description) tuples from GCVE references."""
+    local_instance_name = get_config("generic", "local_instance_name")
+    gcve_references = application.config.get("GCVE_REFERENCES", {})
+    kev_catalogs_list = gcve_references.get("kev", [])
+
+    # Start with local instance
+    catalog_mapping: dict[str, tuple[str, str]] = {
+        local_instance_uuid.hex: (local_instance_name, "")
+    }
+
+    # Add configured catalogs from GCVE references
+    for catalog in kev_catalogs_list:
+        catalog_mapping[catalog["uuid"]] = (
+            catalog["short_name"],
+            catalog.get("description", ""),
+        )
+
+    return catalog_mapping
+
+
+@kev_catalog_bp.route("/", methods=["GET"])
+def list_kev_catalog() -> str:
+    """Public view of KEV catalog (read-only)."""
+    kev_query = request.args.get("query", "")
+    catalog_uuid_param = request.args.get("catalog_uuid", "")
+
+    # Get catalog mapping from config
+    kev_catalogs = get_kev_catalog_mapping()
+
+    # Determine which catalog to show
+    if catalog_uuid_param:
+        try:
+            catalog_uuid = uuid.UUID(catalog_uuid_param)
+        except ValueError:
+            # Invalid UUID format, default to local instance
+            catalog_uuid = local_instance_uuid
+    else:
+        # Default to local instance
+        catalog_uuid = local_instance_uuid
+
+    # Filter by specified catalog
+    kevs = KEVEntry.query.filter(KEVEntry.vulnerability_lookup_origin == catalog_uuid)
+
+    if kev_query:
+        escaped_query = escape_ilike(kev_query)
+
+        # Check if query is a UUID
+        try:
+            uuid_obj = uuid.UUID(kev_query)
+        except Exception:
+            uuid_obj = None
+
+        # Check if query is a valid status_reason
+        valid_status = None
+        try:
+            valid_status = KEVExploitationStatus(kev_query)
+        except ValueError:
+            pass
+
+        # Build filter conditions
+        filter_conditions = [KEVEntry.vuln_id.ilike(f"%{escaped_query}%", escape="\\")]
+
+        if uuid_obj:
+            filter_conditions.append(KEVEntry.uuid == uuid_obj)
+
+        if valid_status:
+            filter_conditions.append(KEVEntry.status_reason == valid_status)
+
+        kevs = kevs.filter(or_(*filter_conditions))
+
+    # Order by status_updated_at descending (most recent first)
+    kevs = kevs.order_by(KEVEntry.status_updated_at.desc())
+
+    page, per_page, offset = get_page_args(
+        page_parameter="page", per_page_parameter="per_page"
+    )
+    page_name = get_parameter()
+    per_page_name = get_parameter(default="per_page")
+    pagination = Pagination(
+        total=kevs.count(),
+        record_name="KEV entries",
+        css_framework="bootstrap5",
+        **{page_name: page, per_page_name: per_page},
+    )
+    kevs = kevs.offset(offset).limit(per_page)
+
+    return render_template(
+        "kev_catalog.html",
+        kevs=kevs,
+        pagination=pagination,
+        catalog_uuid=str(catalog_uuid),
+        local_instance_uuid=str(local_instance_uuid),
+        local_instance_name=get_config("generic", "local_instance_name"),
+        is_local_catalog=(catalog_uuid == local_instance_uuid),
+        kev_catalogs=kev_catalogs,
+    )
+
+
+@kev_catalog_bp.route("/<uuid:kev_uuid>", methods=["GET"])
+def detail_kev_entry(kev_uuid: str) -> str:
+    """Public detailed view of a KEV entry (read-only)."""
+    kev_entry = KEVEntry.query.filter(KEVEntry.uuid == kev_uuid).first()
+    if kev_entry is None:
+        abort(404)
+
+    # Get evidence for this KEV entry
+    evidence_list = KEVEvidence.query.filter(
+        KEVEvidence.kev_entry_uuid == kev_entry.uuid
+    ).all()
+
+    # Check if it's from local catalog
+    is_local_catalog = kev_entry.vulnerability_lookup_origin == local_instance_uuid
+
+    return render_template(
+        "kev_detail.html",
+        kev_entry=kev_entry,
+        evidence_list=evidence_list,
+        is_local_catalog=is_local_catalog,
+    )
+
+
+@kev_catalog_bp.route("/export.ndjson", methods=["GET"])
+def export_kev_catalog_ndjson() -> Response:
+    """Export KEV catalog as NDJSON (Newline Delimited JSON)."""
+    catalog_uuid_param = request.args.get("catalog_uuid", "")
+
+    # Determine which catalog to export
+    if catalog_uuid_param:
+        try:
+            catalog_uuid = uuid.UUID(catalog_uuid_param)
+        except ValueError:
+            catalog_uuid = local_instance_uuid
+    else:
+        catalog_uuid = local_instance_uuid
+
+    # Query KEV entries (filtered by catalog UUID)
+    # Sort by status_updated_at to maintain consistency with feed
+    query = KEVEntry.query.filter(KEVEntry.vulnerability_lookup_origin == catalog_uuid)
+    query = query.order_by(KEVEntry.status_updated_at.desc())
+    kevs = query.all()
+
+    # Generate NDJSON output (materialize before session closes)
+    ndjson_lines = []
+    for kev in kevs:
+        ndjson_lines.append(kev.as_json() + "\n")
+    ndjson_content = "".join(ndjson_lines)
+
+    # Return as response with appropriate content type
+    return Response(
+        ndjson_content,
+        mimetype="application/x-ndjson",
+        headers={
+            "Content-Disposition": f"attachment; filename=kev-catalog-{catalog_uuid}.ndjson"
+        },
+    )
+
+
+@kev_catalog_bp.route(
+    "/feed.<string:format>", defaults={"per_page": 20}, methods=["GET"]
+)
+def feed_kev_catalog(per_page: int = 20, format: str = "atom") -> Response:
+    """RSS/ATOM feed for the KEV catalog."""
+    catalog_uuid_param = request.args.get("catalog_uuid", "")
+    public_domain = get_config("generic", "public_domain")
+    _, per_page, offset = get_page_args(
+        page_parameter="page", per_page_parameter="per_page"
+    )
+    feed_max_per_page = application.config.get("FEED_MAX_PER_PAGE", 50)
+    if per_page > feed_max_per_page:
+        per_page = feed_max_per_page
+
+    # Get catalog mapping from config
+    kev_catalogs = get_kev_catalog_mapping()
+
+    # Determine which catalog to show
+    if catalog_uuid_param:
+        try:
+            catalog_uuid = uuid.UUID(catalog_uuid_param)
+        except ValueError:
+            catalog_uuid = local_instance_uuid
+    else:
+        catalog_uuid = local_instance_uuid
+
+    # Get catalog name
+    catalog_name = kev_catalogs.get(str(catalog_uuid), ("Unknown Catalog", ""))[0]
+
+    fg = FeedGenerator()
+    fg.id(f"https://{public_domain}/known-exploited-vulnerabilities-catalog/feed")
+    fg.title(f"{catalog_name} - Known Exploited Vulnerabilities Catalog")
+    fg.author(
+        {
+            "name": catalog_name,
+            "email": application.config.get("ADMIN_EMAIL", ""),
+        }
+    )
+    fg.link(
+        href=f"https://{public_domain}/known-exploited-vulnerabilities-catalog",
+        rel="alternate",
+    )
+    fg.subtitle(
+        f"KEV catalog conforming to GCVE BCP-07. Contains the most recent {per_page} entries."
+    )
+    fg.language("en")
+
+    # Query KEV entries (filtered by catalog UUID)
+    # Sort by status_updated_at (BCP-07 field) to show most recently updated statuses
+    query = KEVEntry.query.filter(KEVEntry.vulnerability_lookup_origin == catalog_uuid)
+    query = query.order_by(KEVEntry.status_updated_at.desc())
+    kevs = query.offset(offset).limit(per_page)
+
+    for kev in reversed(kevs.all()):
+        fe = fg.add_entry()
+        fe.id(
+            f"https://{public_domain}/known-exploited-vulnerabilities-catalog/{kev.uuid}"
+        )
+        fe.title(
+            f"{kev.vuln_id.upper()} - {kev.status_reason.value.title()} {'Exploitation' if kev.exploited else 'Not Exploited'}"
+        )
+        fe.link(
+            href=url_for(
+                "home_bp.vulnerability_view",
+                vulnerability_id=kev.vuln_id,
+                _external=True,
+            )
+        )
+
+        # Build description
+        description_parts = [
+            f"<h3>{kev.vuln_id.upper()}</h3>",
+            f"<p><strong>Status:</strong> {kev.status_reason.value.title()}</p>",
+            f"<p><strong>Exploited:</strong> {'Yes' if kev.exploited else 'No'}</p>",
+            f"<p><strong>Status Updated:</strong> {kev.status_updated_at.strftime('%Y-%m-%d %H:%M UTC')}</p>",
+        ]
+
+        # Add alternative IDs if present
+        if kev.alt_id and len(kev.alt_id) > 0:
+            description_parts.append(
+                f"<p><strong>Alternative IDs:</strong> {', '.join(kev.alt_id)}</p>"
+            )
+
+        # Add characteristics
+        if kev.characteristics:
+            chars = []
+            if kev.characteristics.get("severity") is not None:
+                chars.append(f"Severity: {kev.characteristics['severity']}")
+            if kev.characteristics.get("remote_code_execution"):
+                chars.append("Remote Code Execution")
+            if kev.characteristics.get("authentication_required") is False:
+                chars.append("No Authentication Required")
+            if kev.characteristics.get("local_access_required") is False:
+                chars.append("Remote Access")
+            if chars:
+                description_parts.append(
+                    f"<p><strong>Characteristics:</strong> {', '.join(chars)}</p>"
+                )
+
+        # Add evidence count
+        evidence_count = kev.evidence.count()
+        if evidence_count > 0:
+            description_parts.append(
+                f"<p><strong>Evidence Sources:</strong> {evidence_count}</p>"
+            )
+
+        # Add timestamps
+        if kev.timestamps:
+            if kev.timestamps.get("first_seen_at"):
+                description_parts.append(
+                    f"<p><strong>First Seen:</strong> {kev.timestamps['first_seen_at'][:10]}</p>"
+                )
+            if kev.timestamps.get("asserted_at"):
+                description_parts.append(
+                    f"<p><strong>Asserted:</strong> {kev.timestamps['asserted_at'][:10]}</p>"
+                )
+
+        # Add scope notes if present
+        if kev.scope and kev.scope.get("notes"):
+            description_parts.append(
+                f"<p><strong>Scope Notes:</strong> {kev.scope['notes']}</p>"
+            )
+
+        description = "\n".join(description_parts)
+        fe.content(description, type="html")
+        fe.description(description)
+        fe.published(kev.status_updated_at.replace(tzinfo=timezone.utc))
+        fe.updated(
+            kev.updated_timestamp.replace(tzinfo=timezone.utc)
+            if kev.updated_timestamp
+            else kev.creation_timestamp.replace(tzinfo=timezone.utc)
+        )
+
+    # Generate feed with XSLT
+    feed_bytes = inject_xslt(
+        fg.atom_str(pretty=True) if format == "atom" else fg.rss_str(pretty=True)
+    )
+    return Response(feed_bytes, mimetype="application/xml")

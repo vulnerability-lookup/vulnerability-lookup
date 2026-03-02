@@ -1,0 +1,224 @@
+{% extends "main.html" %}
+{% block title %}Known Exploited Vulnerabilities Catalog{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-9">
+    <h1>Known Exploited Vulnerabilities Catalog</h1>
+    <p class="text-muted">
+      {% if is_local_catalog %}
+        Local catalog of known exploited vulnerabilities conforming to GCVE BCP-07 standard.
+        <br><small>Catalog UUID: <code>{{ local_instance_uuid }}</code></small> (<b>{{ local_instance_name }}</b>)
+      {% else %}
+        External catalog of known exploited vulnerabilities conforming to GCVE BCP-07 standard.
+        <br><small>Catalog UUID: <code>{{ catalog_uuid }}</code></small> (<b>{{ kev_catalogs.get(catalog_uuid, ("Unknown Catalog", ""))[0] }}</b>)
+      {% endif %}
+      <br>This catalog contains {{ pagination.total }} entries.
+    </p>
+  </div>
+
+  <div class="col-md-3">
+    <form class="align-items-center" method="GET">
+        <label class="visually-hidden" for="kevInput">Search term</label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="kevInput" name="query" placeholder="Search term" value="{{ request.args.get('query', '') }}" />
+          <button type="submit" class="btn btn-primary input-group-text">Search</button>
+        </div>
+        {% if not is_local_catalog %}
+          <input type="hidden" name="catalog_uuid" value="{{ catalog_uuid }}" />
+        {% endif %}
+    </form>
+
+    {% if current_user.is_authenticated and current_user.is_admin and is_local_catalog %}
+    <a href="{{ url_for('admin_kev_bp.form_kev') }}" class="btn btn-success mt-2 w-100">
+      {{ render_icon('plus') }} Add KEV Entry
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="table-responsive-md">
+  <table id="table-kevs" class="table table-hover">
+  <thead>
+    <tr>
+      <th>Vulnerability ID</th>
+      <th>Status</th>
+      <th>Exploited</th>
+      <th>Status Updated</th>
+      <th>Evidence</th>
+      <th>Characteristics</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for kev in kevs %}
+    <tr>
+      <td>
+        <a href="{{ url_for('home_bp.vulnerability_view', vulnerability_id=kev.vuln_id) }}">
+          <strong>{{ kev.vuln_id.upper() }}</strong>
+        </a>
+        {% if kev.alt_id and kev.alt_id|length > 0 %}
+          <br>
+          <small class="text-muted">
+            Alternative IDs:
+            {% for alt in kev.alt_id[:3] %}
+              {{ alt }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if kev.alt_id|length > 3 %}
+              <span class="text-muted">+{{ kev.alt_id|length - 3 }} more</span>
+            {% endif %}
+          </small>
+        {% endif %}
+      </td>
+      <td>
+        {% if kev.status_reason.value == 'confirmed' %}
+          <span class="badge bg-success">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'suspected' %}
+          <span class="badge bg-warning text-dark">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'disputed' %}
+          <span class="badge bg-danger">{{ kev.status_reason.value.title() }}</span>
+        {% elif kev.status_reason.value == 'historical' %}
+          <span class="badge bg-secondary">{{ kev.status_reason.value.title() }}</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ kev.status_reason.value.title() }}</span>
+        {% endif %}
+        {% if kev.status_reason.value != 'unknown' and kev.timestamps and kev.timestamps.get('asserted_at') %}
+          <br><small class="text-muted">Asserted: {{ kev.timestamps.asserted_at[:10] }}</small>
+        {% endif %}
+      </td>
+      <td>
+        {% if kev.exploited %}
+          <span class="badge bg-danger">Yes</span>
+        {% else %}
+          <span class="badge bg-success">No</span>
+        {% endif %}
+      </td>
+      <td>
+        {{ kev.status_updated_at | datetimeformat('%Y-%m-%d') }}
+        {% if kev.timestamps %}
+          {% if kev.timestamps.get('first_seen_at') %}
+            <br><small class="text-muted">First seen: {{ kev.timestamps.first_seen_at[:10] }}</small>
+          {% endif %}
+        {% endif %}
+      </td>
+      <td>
+        {% set evidence_count = kev.evidence.count() %}
+        {% if evidence_count > 0 %}
+          <span class="badge bg-info">{{ evidence_count }}</span>
+          {% if evidence_count == 1 %}
+            <small class="text-muted">source</small>
+          {% else %}
+            <small class="text-muted">sources</small>
+          {% endif %}
+          <br>
+          {% for evidence in kev.evidence[:2] %}
+            <small class="text-muted">
+              {% if evidence.evidence_type %}{{ evidence.evidence_type.value }}{% else %}evidence{% endif %}
+            </small>
+            {% if not loop.last %}<br>{% endif %}
+          {% endfor %}
+          {% if evidence_count > 2 %}
+            <small class="text-muted">+{{ evidence_count - 2 }} more</small>
+          {% endif %}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if kev.characteristics %}
+          {% if kev.characteristics.get('severity') is not none %}
+            <span class="badge bg-warning text-dark">Severity: {{ "%.1f"|format(kev.characteristics.severity) }}</span><br>
+          {% endif %}
+          {% if kev.characteristics.get('remote_code_execution') %}
+            <span class="badge bg-danger">RCE</span><br>
+          {% endif %}
+          {% if kev.characteristics.get('authentication_required') == false %}
+            <span class="badge bg-warning text-dark">No Auth Required</span><br>
+          {% endif %}
+          {% if kev.characteristics.get('local_access_required') == false %}
+            <span class="badge bg-info">Remote</span>
+          {% endif %}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('kev_catalog_bp.detail_kev_entry', kev_uuid=kev.uuid) }}" title="View details">
+          {{ render_icon('eye') }} Details
+        </a>
+      </td>
+    </tr>
+  {% else %}
+    <tr>
+      <td colspan="7" class="text-center text-muted">
+        {% if request.args.get('query') %}
+          No KEV entries found matching your search.
+        {% else %}
+          No KEV entries in the local catalog yet.
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+</div>
+
+<div class="row mt-3">
+    <div class="col">
+        {{ pagination.links }}
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        {{ pagination.info }}
+    </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">About this Catalog</h5>
+      </div>
+      <div class="card-body">
+        {% set catalog_description = kev_catalogs.get(catalog_uuid, ("Unknown Catalog", ""))[1] %}
+        {% if catalog_description %}
+        <p>
+          {{ catalog_description }}
+        </p>
+        {% endif %}
+        <p>
+          This Known Exploited Vulnerabilities (KEV) catalog conforms to the
+          <strong><a href="https://gcve.eu/bcp/gcve-bcp-07/" target="_blank" rel="noopener noreferrer">GCVE BCP-07 standard</a></strong> (Best Current Practice) standard for documenting
+          vulnerabilities with confirmed or suspected active exploitation.
+        </p>
+        <p class="mb-0">
+          Each entry includes exploitation status, evidence sources, and characteristics
+          to help organizations prioritize vulnerability remediation efforts.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col text-center">
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ url_for('static', filename='schemas/GCVE/gcve-bcp-07.json') }}" class="btn btn-sm btn-outline-primary" title="JSON Schema">
+          {{ render_icon('filetype-json') }} JSON Schema
+        </a>
+         <a href="{{ url_for('apiv1.kev_kev_list', vulnerability_lookup_origin=catalog_uuid) }}" class="btn btn-sm btn-outline-primary" title="Access API">
+          {{ render_icon('file-earmark-code') }} JSON API
+        </a>
+        <a href="{{ url_for('kev_catalog_bp.export_kev_catalog_ndjson', catalog_uuid=catalog_uuid if not is_local_catalog else none) }}" class="btn btn-sm btn-outline-primary" title="Export as NDJSON">
+          {{ render_icon('download') }} NDJSON
+        </a>
+        <a class="icon-link" href="{{ url_for('kev_catalog_bp.feed_kev_catalog', format='atom', catalog_uuid=catalog_uuid if not is_local_catalog else none) }}" type="application/atom+xml" title="Atom feed">
+          {{ render_icon('rss') }} Atom
+        </a>
+        <a class="icon-link" href="{{ url_for('kev_catalog_bp.feed_kev_catalog', format='rss', catalog_uuid=catalog_uuid if not is_local_catalog else none) }}" type="application/rss+xml" title="RSS feed">
+          {{ render_icon('rss-fill') }} RSS
+        </a>
+      </div>
+    </div>
+</div>
+{% endblock %}

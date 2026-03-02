@@ -1,0 +1,332 @@
+{% extends "main.html" %}
+
+{% block title %}KEV Entry: {{ kev_entry.vuln_id.upper() }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+  <div class="col">
+    <h1>{{ kev_entry.vuln_id.upper() }}</h1>
+    <p class="text-muted">
+      Known Exploited Vulnerability Entry
+      {% if is_local_catalog %}
+        <span class="badge bg-primary">Local Catalog</span>
+      {% else %}
+        <span class="badge bg-secondary">External Catalog</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="col-auto">
+    <a href="{{ url_for('kev_catalog_bp.list_kev_catalog', catalog_uuid=kev_entry.vulnerability_lookup_origin if not is_local_catalog else none) }}" class="btn btn-secondary">
+      {{ render_icon('arrow-left') }} Back to Catalog
+    </a>
+    <a href="{{ url_for('home_bp.vulnerability_view', vulnerability_id=kev_entry.vuln_id) }}" class="btn btn-primary">
+      {{ render_icon('search') }} View Vulnerability
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">Entry Details</h5>
+  </div>
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Vulnerability ID</label>
+        <p><a href="{{ url_for('home_bp.vulnerability_view', vulnerability_id=kev_entry.vuln_id) }}">{{ kev_entry.vuln_id.upper() }}</a></p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Status</label>
+        <p>
+          {% if kev_entry.status_reason.value == 'confirmed' %}
+            <span class="badge bg-success">{{ kev_entry.status_reason.value.title() }}</span>
+          {% elif kev_entry.status_reason.value == 'suspected' %}
+            <span class="badge bg-warning text-dark">{{ kev_entry.status_reason.value.title() }}</span>
+          {% elif kev_entry.status_reason.value == 'disputed' %}
+            <span class="badge bg-danger">{{ kev_entry.status_reason.value.title() }}</span>
+          {% elif kev_entry.status_reason.value == 'historical' %}
+            <span class="badge bg-secondary">{{ kev_entry.status_reason.value.title() }}</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ kev_entry.status_reason.value.title() }}</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if kev_entry.alt_id and kev_entry.alt_id|length > 0 %}
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <label class="form-label fw-bold">Alternative IDs</label>
+        <ul class="list-unstyled">
+          {% for alt in kev_entry.alt_id %}
+            <li><code>{{ alt }}</code></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Exploited</label>
+        <p>
+          {% if kev_entry.exploited %}
+            <span class="badge bg-danger">Yes</span>
+          {% else %}
+            <span class="badge bg-success">No</span>
+          {% endif %}
+        </p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Status Updated At</label>
+        <p>{{ kev_entry.status_updated_at | datetimeformat('%Y-%m-%d %H:%M %Z') }}</p>
+      </div>
+    </div>
+
+    {% if kev_entry.characteristics %}
+    <hr>
+    <h6>Characteristics</h6>
+    <div class="row">
+      {% if kev_entry.characteristics.get('remote_code_execution') is not none %}
+      <div class="col-md-3 mb-3">
+        <label class="form-label fw-bold">Remote Code Execution</label>
+        <p>
+          {% if kev_entry.characteristics.remote_code_execution %}
+            <span class="badge bg-danger">Yes</span>
+          {% else %}
+            <span class="badge bg-success">No</span>
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+      {% if kev_entry.characteristics.get('authentication_required') is not none %}
+      <div class="col-md-3 mb-3">
+        <label class="form-label fw-bold">Authentication Required</label>
+        <p>
+          {% if kev_entry.characteristics.authentication_required %}
+            <span class="badge bg-success">Yes</span>
+          {% else %}
+            <span class="badge bg-danger">No</span>
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+      {% if kev_entry.characteristics.get('local_access_required') is not none %}
+      <div class="col-md-3 mb-3">
+        <label class="form-label fw-bold">Local Access Required</label>
+        <p>
+          {% if kev_entry.characteristics.local_access_required %}
+            <span class="badge bg-warning text-dark">Yes</span>
+          {% else %}
+            <span class="badge bg-info">Remote</span>
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+      {% if kev_entry.characteristics.get('severity') is not none %}
+      <div class="col-md-3 mb-3">
+        <label class="form-label fw-bold">Severity</label>
+        <p>
+          <span class="badge bg-warning text-dark">{{ "%.1f"|format(kev_entry.characteristics.severity) }}</span>
+        </p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if kev_entry.timestamps %}
+    <hr>
+    <h6>Timestamps</h6>
+    <div class="row">
+      {% if kev_entry.timestamps.get('first_seen_at') %}
+      <div class="col-md-4 mb-3">
+        <label class="form-label fw-bold">First Seen At</label>
+        <p>{{ kev_entry.timestamps.first_seen_at[:10] }}</p>
+      </div>
+      {% endif %}
+      {% if kev_entry.timestamps.get('asserted_at') %}
+      <div class="col-md-4 mb-3">
+        <label class="form-label fw-bold">Asserted At</label>
+        <p>{{ kev_entry.timestamps.asserted_at[:10] }}</p>
+      </div>
+      {% endif %}
+      {% if kev_entry.timestamps.get('last_seen_at') %}
+      <div class="col-md-4 mb-3">
+        <label class="form-label fw-bold">Last Seen At</label>
+        <p>{{ kev_entry.timestamps.last_seen_at[:10] }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if kev_entry.scope and kev_entry.scope.get('notes') %}
+    <hr>
+    <h6>Scope</h6>
+    <div class="row">
+      <div class="col-md-12 mb-3">
+        <label class="form-label fw-bold">Notes</label>
+        <p>{{ kev_entry.scope.notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if kev_entry.references and kev_entry.references|length > 0 %}
+    <hr>
+    <h6>References</h6>
+    <div class="row">
+      <div class="col-md-12">
+        <ul>
+          {% for ref in kev_entry.references %}
+            <li>{{ ref }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    <hr>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">Entry UUID</label>
+        <p><code>{{ kev_entry.uuid }}</code></p>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">Catalog Origin UUID</label>
+        <p><code>{{ kev_entry.vulnerability_lookup_origin }}</code></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">Created</label>
+        <p>{{ kev_entry.creation_timestamp | datetimeformat('%Y-%m-%d %H:%M %Z') }}</p>
+      </div>
+      {% if kev_entry.updated_timestamp %}
+      <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">Last Updated</label>
+        <p>{{ kev_entry.updated_timestamp | datetimeformat('%Y-%m-%d %H:%M %Z') }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Evidence ({{ evidence_list|length }})</h5>
+  </div>
+  <div class="card-body">
+    {% if evidence_list %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Signal</th>
+            <th>Confidence</th>
+            <th>Details</th>
+            <th>GCVE Metadata</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for evidence in evidence_list %}
+          <tr>
+            <td>
+              {% if evidence.evidence_type %}
+                <span class="badge bg-secondary">{{ evidence.evidence_type.value }}</span>
+              {% else %}
+                <span class="text-muted">Not specified</span>
+              {% endif %}
+            </td>
+            <td>
+              <small>{{ evidence.source }}</small>
+            </td>
+            <td>
+              {% if evidence.signal %}
+                {% if evidence.signal is string %}
+                  <small class="text-muted">{{ evidence.signal }}</small>
+                {% elif evidence.signal is sequence %}
+                  <ul class="mb-0 ps-3">
+                    {% for sig in evidence.signal %}
+                      <li><small class="text-muted">{{ sig }}</small></li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <small class="text-muted">{{ evidence.signal }}</small>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if evidence.confidence is not none %}
+                {% if evidence.confidence is number %}
+                  <span class="badge bg-info">{{ "%.2f"|format(evidence.confidence) }}</span>
+                {% else %}
+                  <span class="badge bg-info">{{ evidence.confidence }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if evidence.details and evidence.details|length > 0 %}
+                <details>
+                  <summary>View details</summary>
+                  <pre class="mt-2 mb-0"><code>{{ evidence.details|tojson(indent=2) }}</code></pre>
+                </details>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if evidence.gcve_metadata and evidence.gcve_metadata|length > 0 %}
+                <ul class="mb-0 ps-3 small">
+                  {% if evidence.gcve_metadata.get('vluuid') %}
+                    <li><strong>VL UUID:</strong> <code>{{ evidence.gcve_metadata.vluuid }}</code></li>
+                  {% endif %}
+                  {% if evidence.gcve_metadata.get('gna') is not none %}
+                    <li><strong>GNA:</strong> {{ evidence.gcve_metadata.gna }}</li>
+                  {% endif %}
+                  {% if evidence.gcve_metadata.get('object_uuid') %}
+                    <li><strong>Object UUID:</strong> <code>{{ evidence.gcve_metadata.object_uuid }}</code></li>
+                  {% endif %}
+                </ul>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No evidence available for this entry.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col">
+    <div class="card bg-light">
+      <div class="card-body">
+        <h6>Export Options</h6>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('apiv1.kev_kev_detail', kev_uuid=kev_entry.uuid) }}" class="btn btn-sm btn-outline-primary" title="Get as JSON">
+            {{ render_icon('file-earmark-code') }} JSON Object
+          </a>
+          <a href="{{ url_for('apiv1.kev_kev_list', vuln_id=kev_entry.vuln_id, vulnerability_lookup_origin=kev_entry.vulnerability_lookup_origin) }}" class="btn btn-sm btn-outline-primary" title="Access API">
+          {{ render_icon('file-earmark-code') }} JSON API
+          </a>
+          <a href="{{ url_for('kev_catalog_bp.list_kev_catalog', catalog_uuid=kev_entry.vulnerability_lookup_origin if not is_local_catalog else none) }}" class="btn btn-sm btn-outline-secondary">
+            {{ render_icon('list') }} View Full Catalog
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
