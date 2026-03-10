@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string",
+      "description": "The user name of the user"
+    },
+    "org_UUID": {
+      "type": "string",
+      "description": "The identifier of the organization the user belongs to"
+    },
+    "UUID": {
+      "type": "string",
+      "description": "The identifier of the user"
+    },
+    "active": {
+      "type": "string",
+      "description": "The user is an active user of the organization"
+    },
+    "name": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string",
+          "description": "The first name of the user"
+        },
+        "last": {
+          "type": "string",
+          "description": "The last name of the user"
+        },
+        "middle": {
+          "type": "string",
+          "description": "The middle name of the user, if any"
+        },
+        "suffix": {
+          "type": "string",
+          "description": "The suffix of the user, if any"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "active_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "The active roles of the user",
+            "enum": [
+              "ADMIN"
+            ]
+          }
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "properties": {
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the user was created"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The last time the user was modified"
+        }
+      }
+    }
+  }
+}

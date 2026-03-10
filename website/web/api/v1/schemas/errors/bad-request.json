@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string",
+      "description": "Error name"
+    },
+    "message": {
+      "type": "string",
+      "description": "Error description"
+    },
+    "details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string",
+            "description": "Invalid value"
+          },
+          "param": {
+            "type": "string",
+            "description": "The name of the parameter with the error"
+          },
+          "location": {
+            "type": "string",
+            "enum": [
+              "body",
+              "param",
+              "query"
+            ],
+            "description": "The location of the parameter"
+          }
+        }
+      }
+    }
+  }
+}

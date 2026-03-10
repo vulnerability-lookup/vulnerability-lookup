@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "$id": "CNAOrg",
+  "title": "CVE CNA Organization",
+  "description": "Schema for a CVE CNA Organization",
+  "allOf": [
+    { "$ref": "./BaseOrg.json" },
+    {
+      "properties": {
+        "authority": {
+          "const": ["CNA"]
+        },
+        "oversees": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "./BaseOrg.json#/definitions/uuidType"
+          }
+        },
+        "hard_quota": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "soft_quota": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "charter_or_scope": {
+          "$ref": "/BaseOrg#/definitions/uriType"
+        },
+        "disclosure_policy": {
+          "$ref": "/BaseOrg#/definitions/uriType"
+        },
+        "product_list": {
+          "$ref": "/BaseOrg#/definitions/uriType"
+        }
+      },
+      "required": ["hard_quota"]
+    }
+  ]
+}
