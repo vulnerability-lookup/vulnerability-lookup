@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "properties": {
+    "id_quota": {
+      "type": "integer",
+      "format": "int32",
+      "description": "The number of CVE IDs the organization is allowed to have in the RESERVED state at one time."
+    },
+    "total_reserved": {
+      "type": "integer",
+      "format": "int32",
+      "description": "The total number of CVE IDs across all years that the organization has in the RESERVED state."
+    },
+    "available": {
+      "type": "integer",
+      "format": "int32",
+      "description": "The number of CVE IDs that can be reserved by the organization. (e.g., id_quota - total_reserved)"
+    }
+  }
+}

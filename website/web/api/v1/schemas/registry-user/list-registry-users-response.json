@@ -1,0 +1,109 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cve.mitre.org/schema/user/registry-user.json",
+  "type": "object",
+  "title": "CVE Registry Users List",
+  "description": "JSON Schema for list of CVE Registry Users",
+  "properties": {
+		"totalCount": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "itemsPerPage": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "pageCount": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "currentPage": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "prevPage": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "nextPage": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "users": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "UUID": {
+            "type": "string",
+            "description": "Unique identifier for the user"
+          },
+          "username": {
+            "type": "string",
+            "description": "User's identifier or username"
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "first": {
+                "type": "string",
+                "description": "User's first name"
+              },
+              "last": {
+                "type": "string",
+                "description": "User's last name"
+              },
+              "middle": {
+                "type": "string",
+                "description": "User's middle name"
+              },
+              "suffix": {
+                "type": "string",
+                "description": "User's name suffix"
+              }
+            },
+            "required": ["first", "last"]
+          },
+          "role": {
+            "type": "string",
+            "enum": ["ADMIN"],
+            "description": "The role of the user in the organization. Currently only 'ADMIN' is supported."
+          },
+          "secret": {
+            "type": "string",
+            "description": "Hashed secret for user authentication"
+          },
+          "contact_info": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "User's email address"
+              },
+              "phone": {
+                "type": "string",
+                "description": "User's phone number"
+              }
+            },
+            "required": ["email"]
+          },
+          "status": {
+            "type":"string",
+            "description": "Active or inactive"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the user account was created"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last update to the user data"
+          }
+        }
+      }
+		}
+	}
+}

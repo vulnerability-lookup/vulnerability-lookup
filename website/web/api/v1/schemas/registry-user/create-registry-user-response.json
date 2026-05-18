@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cve.mitre.org/schema/user/registry-user.json",
+  "type": "object",
+  "title": "CVE Create Registry User Response",
+  "description": "JSON Schema for CVE Create Registry User response",
+  "properties": {
+		"message": {
+      "type": "string",
+      "description": "Success description"
+    },
+    "created": {
+      "type": "object",
+      "properties": {
+        "UUID": {
+          "type": "string",
+          "description": "Unique identifier for the user"
+        },
+        "username": {
+          "type": "string",
+          "description": "User's identifier or username"
+        },
+        "name": {
+          "type": "object",
+          "properties": {
+            "first": {
+              "type": "string",
+              "description": "User's first name"
+            },
+            "last": {
+              "type": "string",
+              "description": "User's last name"
+            },
+            "middle": {
+              "type": "string",
+              "description": "User's middle name"
+            },
+            "suffix": {
+              "type": "string",
+              "description": "User's name suffix"
+            }
+          },
+          "required": ["first", "last"]
+        },
+        "org_affiliations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "UUIDs of organizations the user is affiliated with"
+        },
+        "cve_program_org_membership": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "UUIDs of CVE program organizations the user is a member of"
+        },
+        "authority": {
+          "type": "object",
+          "properties": {
+            "active_roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["ADMIN", "PUBLISHER"]
+              }
+            }
+          },
+          "required": ["active_roles"]
+        },
+        "secret": {
+          "type": "string",
+          "description": "Hashed secret for user authentication"
+        },
+        "last_active": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Timestamp of the user's last activity"
+        },
+        "deactivation_date": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Timestamp of when the user was deactivated, if applicable"
+        },
+        "contact_info": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "User's email address"
+            },
+            "phone": {
+              "type": "string",
+              "description": "User's phone number"
+            }
+          },
+          "required": ["email"]
+        },
+        "in_use": {
+          "type": "boolean",
+          "description": "Indicates if the user account is currently active"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the user account was created"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last update to the user data"
+        }
+      }
+    }
+	}
+}

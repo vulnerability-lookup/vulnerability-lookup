@@ -1,0 +1,18 @@
+{
+    "cnaContainer": {
+        "descriptions": [
+            {
+                "lang": "string",
+                "value": "string"
+            }
+        ],
+        "affected": [
+            {}
+        ],
+        "references": [
+            {
+                "url": "string"
+            }
+        ]
+    }
+}
