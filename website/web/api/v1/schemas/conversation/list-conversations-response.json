@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cve.mitre.org/schema/conversation/list-conversations-response.json",
+  "type": "object",
+  "title": "List Conversations Response",
+  "description": "JSON Schema for a list of conversation messages",
+  "properties": {
+    "totalCount": {
+      "type": "integer",
+      "description": "Total number of items"
+    },
+    "itemsPerPage": {
+      "type": "integer",
+      "description": "Number of items per page"
+    },
+    "pageCount": {
+      "type": "integer",
+      "description": "Total number of pages"
+    },
+    "currentPage": {
+      "type": "integer",
+      "description": "Current page number"
+    },
+    "prevPage": {
+      "type": ["integer", "null"],
+      "description": "Previous page number"
+    },
+    "nextPage": {
+      "type": ["integer", "null"],
+      "description": "Next page number"
+    },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "$ref": "conversation.json"
+      },
+      "description": "List of conversation messages"
+    }
+  }
+}

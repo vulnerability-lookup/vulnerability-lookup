@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cve.mitre.org/schema/org/organization.json",
+  "type": "object",
+  "title": "CVE Update Registry Org Response",
+  "description": "JSON Schema for CVE Update Registry Org response",
+  "properties": {
+		"message": {
+      "type": "string",
+      "description": "Success description"
+    },
+    "updated": {
+      "type": "object",
+      "properties": {
+        "UUID": {
+          "type": "string",
+          "description": "Unique identifier for the organization"
+        },
+        "long_name": {
+          "type": "string",
+          "description": "Full name of the organization"
+        },
+        "short_name": {
+          "type": "string",
+          "description": "Short name or acronym of the organization"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names or aliases for the organization"
+        },
+        "authority": {
+          "type": "object",
+          "properties": {
+            "active_roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["CNA", "ADP", "Root", "Secretariat"]
+              }
+            }
+          },
+          "required": ["active_roles"]
+        },
+        "reports_to": {
+          "type": "string",
+          "description": "UUID of the parent organization, if any"
+        },
+        "oversees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "UUIDs of organizations overseen by this organization"
+        },
+        "root_or_tlr": {
+          "type": "boolean",
+          "description": "Indicates if the organization is a root or top-level root"
+        },
+        "users": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "UUIDs of users associated with this organization"
+        },
+        "charter_or_scope": {
+          "type": "string",
+          "description": "Description of the organization's charter or scope"
+        },
+        "disclosure_policy": {
+          "type": "string",
+          "description": "The organization's disclosure policy"
+        },
+        "product_list": {
+          "type": "string",
+          "description": "List of products associated with the organization"
+        },
+        "soft_quota": {
+          "type": "integer",
+          "description": "Soft quota for CVE IDs"
+        },
+        "hard_quota": {
+          "type": "integer",
+          "description": "Hard quota for CVE IDs"
+        },
+        "contact_info": {
+          "type": "object",
+          "properties": {
+            "additional_contact_users": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "poc": {
+              "type": "string",
+              "description": "Point of contact name"
+            },
+            "poc_email": {
+              "type": "string",
+              "format": "email",
+              "description": "Point of contact email"
+            },
+            "poc_phone": {
+              "type": "string",
+              "description": "Point of contact phone number"
+            },
+            "admins": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "UUIDs of admin users"
+            },
+            "org_email": {
+              "type": "string",
+              "format": "email",
+              "description": "Organization's email address"
+            },
+            "website": {
+              "type": "string",
+              "format": "uri",
+              "description": "Organization's website URL"
+            }
+          },
+          "required": ["poc", "poc_email", "admins", "org_email"]
+        },
+        "in_use": {
+          "type": "boolean",
+          "description": "Indicates if the organization is currently active"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the organization was created"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last update to the organization data"
+        }
+      }
+    }
+	}
+}

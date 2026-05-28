@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "required": [
+    "short_name",
+    "name"
+  ],
+  "properties": {
+    "short_name": {
+      "type": "string",
+      "description": "The short name of the organization"
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the organization"
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "active_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "The active roles of the organization",
+            "enum": [
+              "CNA",
+              "SECRETARIAT",
+              "ROOT_CNA",
+              "ADP"
+            ]
+          }
+        }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "properties": {
+        "id_quota": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The CVE ID quota of the organization",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    }
+  }
+}

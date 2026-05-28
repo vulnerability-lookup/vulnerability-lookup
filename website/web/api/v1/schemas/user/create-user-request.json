@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string",
+      "description": "Preferably the user's email address. Must be 3-128 characters in length; allowed characters are alphanumeric and -_@."
+    },
+    "name": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string",
+          "description": "The first name of the user"
+        },
+        "last": {
+          "type": "string",
+          "description": "The last name of the user"
+        },
+        "middle": {
+          "type": "string",
+          "description": "The middle name of the user, if any"
+        },
+        "suffix": {
+          "type": "string",
+          "description": "The suffix of the user, if any"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "active_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "The active roles of the user",
+            "enum": [
+              "ADMIN"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "required": ["username"]
+}

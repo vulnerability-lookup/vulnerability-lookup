@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Success description"
+    },
+    "created": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the organization."
+        },
+        "short_name": {
+          "type": "string",
+          "description": "The short name of the organization."
+        },
+        "UUID": {
+          "type": "string",
+          "description": "The identifier of the organization."
+        },
+        "policies": {
+          "type": "object",
+          "properties": {
+            "id_quota": {
+              "type": "integer",
+              "format": "int32",
+              "description": "The number of CVE IDs the organization is allowed to have in the RESERVED state at one time.",
+              "minimum": 0,
+              "maximum": 100000
+            }
+          }
+        },
+        "authority": {
+          "type": "object",
+          "properties": {
+            "active_roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "The active roles of the organization.",
+                "enum": [
+                  "CNA",
+                  "SECRETARIAT",
+                  "ROOT_CNA",
+                  "ADP"
+                ]
+              }
+            }
+          }
+        },
+        "time": {
+          "type": "object",
+          "properties": {
+            "created": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The time the organization was created."
+            },
+            "modified": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The last time the organization was modified."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "./BaseOrg.json",
+  "type": "object",
+  "title": "CVE Base Organization",
+  "description": "Base schema for a CVE Organization",
+  "definitions": {
+    "uuidType": {
+      "description": "A version 4 (random) universally unique identifier (UUID) as defined by [RFC 4122](https://tools.ietf.org/html/rfc4122#section-4.1.3).",
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
+    },
+    "uriType": {
+      "description": "A universal resource identifier (URI), according to [RFC 3986](https://tools.ietf.org/html/rfc3986).",
+      "type": "string",
+      "format": "uri",
+      "pattern": "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "shortName": {
+      "description": "A 2-32 character name that can be used to complement an organization's UUID.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 32
+    },
+    "longName": {
+      "description": "A 1-256 character name that can be used to complement an organization's short_name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "authority": {
+      "description": "The authority (role) of this organization within the CVE program",
+      "type": "string",
+      "enum": ["CNA", "SECRETARIAT", "BULK_DOWNLOAD", "ADP"]
+    }
+  },
+  "properties": {
+    "UUID": {
+      "$ref": "#/definitions/uuidType"
+    },
+    "short_name": {
+      "$ref": "#/definitions/shortName"
+    },
+    "long_name": {
+      "$ref": "#/definitions/longName"
+    },
+    "aliases": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "authority": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/authority"
+      }
+    },
+    "root_or_tlr": {
+      "type": "boolean"
+    },
+    "reports_to": {
+      "$ref": "#/definitions/uuidType"
+    },
+    "users": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/uuidType"
+      }
+    },
+    "admins": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/uuidType"
+      }
+    },
+    "contact_info": {
+      "type": "object",
+      "properties": {
+        "additional_contact_users": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/uuidType"
+          }
+        },
+        "poc": {
+          "type": "string"
+        },
+        "poc_email": {
+          "type": "string",
+          "format": "email"
+        },
+        "poc_phone": {
+          "type": "string"
+        },
+        "org_email": {
+          "type": "string",
+          "format": "email"
+        },
+        "website": {
+          "type": "string",
+          "format": "uri",
+          "description": "Organization's website URL"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "short_name",
+    "long_name"
+  ]
+}

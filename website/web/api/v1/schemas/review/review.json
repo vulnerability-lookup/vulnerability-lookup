@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cve.mitre.org/schema/review/review.json",
+  "type": "object",
+  "title": "Review Object",
+  "description": "JSON Schema for a review object",
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "description": "Unique identifier for the review object"
+    },
+    "target_object_uuid": {
+      "type": "string",
+      "description": "UUID of the target object being reviewed"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status of the review object (e.g., PENDING, APPROVED, REJECTED)"
+    },
+    "new_review_data": {
+      "type": "object",
+      "description": "The data proposed in the review"
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the review object was created"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the review object was last updated"
+    }
+  },
+  "required": [
+    "uuid",
+    "target_object_uuid",
+    "status",
+    "new_review_data",
+    "created",
+    "last_updated"
+  ]
+}
